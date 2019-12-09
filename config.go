@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/red-gold/ts-serverless/src/core/config"
+	"github.com/red-gold/telar-core/config"
 )
 
 // Initialize AppConfig

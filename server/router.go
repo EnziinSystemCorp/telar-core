@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
-	cf "github.com/red-gold/ts-serverless/src/core/config"
+	cf "github.com/red-gold/telar-core/config"
 )
 
 type ServerRouter struct {

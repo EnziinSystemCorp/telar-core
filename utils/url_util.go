@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 
-	coreConfig "github.com/red-gold/ts-serverless/src/core/config"
+	coreConfig "github.com/red-gold/telar-core/config"
 )
 
 const baseFunctionURL = "/function"

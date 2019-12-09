@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	d "github.com/red-gold/ts-serverless/src/core/data"
+	d "github.com/red-gold/telar-core/data"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"gopkg.in/mgo.v2/bson"

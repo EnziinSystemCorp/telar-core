@@ -10,8 +10,8 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/julienschmidt/httprouter"
 	handler "github.com/openfaas-incubator/go-function-sdk"
-	cf "github.com/red-gold/ts-serverless/src/core/config"
-	"github.com/red-gold/ts-serverless/src/core/utils"
+	cf "github.com/red-gold/telar-core/config"
+	"github.com/red-gold/telar-core/utils"
 	uuid "github.com/satori/go.uuid"
 )
 

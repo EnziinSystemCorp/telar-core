@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	coreConfig "github.com/red-gold/ts-serverless/src/core/config"
+	coreConfig "github.com/red-gold/telar-core/config"
 )
 
 func Call(url string, data []byte) error {
