@@ -127,10 +127,13 @@ func requestHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 func checkProtection(w http.ResponseWriter, r *http.Request, req *Request, config *cf.Configuration, protected RouteProtection) {
 
 	if protected == RouteProtectionHMAC {
-		hmacErr := validateRequest(req)
+		presented, hmacErr := checkHmacPresent(req)
 		if hmacErr != nil {
 			// TODO: return on invalid request
-			fmt.Printf("invalid HMAC digest: %s", hmacErr.Error())
+			writeError(w, "invalid HMAC digest!", hmacErr.Error(), http.StatusUnauthorized)
+		}
+		if !presented {
+			writeError(w, "HMAC is not presented!", "", http.StatusUnauthorized)
 		}
 
 	} else if protected == RouteProtectionCookie || protected == RouteProtectionAdmin {
@@ -351,7 +354,13 @@ func validateRequest(req *Request) (err error) {
 func checkHmacPresent(req *Request) (bool, error) {
 
 	xCloudSignature := req.Header.Get(X_Cloud_Signature)
-
+	// Loop over header names
+	for name, values := range req.Header {
+		// Loop over all values for the name.
+		for _, value := range values {
+			fmt.Println(name, value)
+		}
+	}
 	if xCloudSignature != "" {
 		validErr := validateRequest(req)
 		if validErr != nil {
