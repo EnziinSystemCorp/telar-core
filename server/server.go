@@ -364,7 +364,10 @@ func checkHmacPresent(req *Request) (bool, error) {
 	if xCloudSignature != "" {
 		validErr := validateRequest(req)
 		if validErr != nil {
+			fmt.Printf("\n>> Core: HMAC Error %s", validErr.Error())
+
 			return true, validErr
+
 		}
 		userId := req.Header.Get("uid")
 		userUUID, userUuidErr := uuid.FromString(userId)
@@ -378,6 +381,8 @@ func checkHmacPresent(req *Request) (bool, error) {
 		req.SystemRole = req.Header.Get("role")
 		return true, nil
 	}
+
+	fmt.Printf("\n>> Core: HMAC is not presented.")
 	return false, nil
 }
 
