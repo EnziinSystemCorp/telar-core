@@ -370,11 +370,14 @@ func checkHmacPresent(req *Request) (bool, error) {
 
 		}
 		userId := req.Header.Get("uid")
-		userUUID, userUuidErr := uuid.FromString(userId)
-		if userUuidErr != nil {
-			return true, userUuidErr
+		if userId != "" {
+			userUUID, userUuidErr := uuid.FromString(userId)
+			if userUuidErr != nil {
+				return true, userUuidErr
+			}
+			req.UserID = userUUID
+
 		}
-		req.UserID = userUUID
 		req.Username = req.Header.Get("email")
 		req.Avatar = req.Header.Get("avatar")
 		req.DisplayName = req.Header.Get("displayName")
