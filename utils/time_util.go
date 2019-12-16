@@ -30,9 +30,17 @@ func UTCUnixToTime(timestamp int64) time.Time {
 	return time.Unix(0, timestamp*int64(1000000))
 }
 
-// IsTimeExpired
+// IsTimeExpired check time expiration in unix
 func IsTimeExpired(timestamp int64, offsetInSeconds float64) bool {
 	tt := UTCUnixToTime(timestamp)
+	remainder := tt.Sub(time.Now())
+	fmt.Printf("remainder: %v calc : %v", remainder, (remainder.Seconds() + offsetInSeconds))
+
+	return !((remainder.Seconds() + offsetInSeconds) > 0)
+}
+
+// IsTimeExpired check time expiration in golang time
+func IsTimeExpiredInTime(tt time.Time, offsetInSeconds float64) bool {
 	remainder := tt.Sub(time.Now())
 	fmt.Printf("remainder: %v calc : %v", remainder, (remainder.Seconds() + offsetInSeconds))
 
