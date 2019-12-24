@@ -115,7 +115,12 @@ func requestHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	req.params = ps
 	// Reading cookie in protected request
 	if protected != RouteProtectionPublic {
-		checkProtection(w, r, &req, config, protected)
+		err := checkProtection(w, r, &req, config, protected)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(err.Error()))
+			return
+		}
 	}
 	result, resultErr := funcHandler(req)
 	parseHeader(w, r, result, resultErr)
@@ -124,47 +129,54 @@ func requestHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 }
 
 // checkProtection check protection
-func checkProtection(w http.ResponseWriter, r *http.Request, req *Request, config *cf.Configuration, protected RouteProtection) {
+func checkProtection(w http.ResponseWriter, r *http.Request, req *Request, config *cf.Configuration, protected RouteProtection) error {
 
 	if protected == RouteProtectionHMAC {
 		presented, hmacErr := checkHmacPresent(req)
 		if hmacErr != nil {
-			// TODO: return on invalid request
-			writeError(w, "invalid HMAC digest!", hmacErr.Error(), http.StatusUnauthorized)
+			fmt.Printf("\ninvalid HMAC digest! %s\n", hmacErr.Error())
+			return fmt.Errorf("invalid HMAC digest! %s", hmacErr.Error())
 		}
 		if !presented {
-			writeError(w, "HMAC is not presented!", "", http.StatusUnauthorized)
+			fmt.Printf("\nHMAC is not presented!\n")
+			return fmt.Errorf("HMAC is not presented!")
 		}
 
 	} else if protected == RouteProtectionCookie || protected == RouteProtectionAdmin {
 		presented, hmacErr := checkHmacPresent(req)
 		if hmacErr != nil {
-			// TODO: return on invalid request
-			fmt.Printf("invalid HMAC digest: %s", hmacErr.Error())
+			fmt.Printf("\ninvalid HMAC digest! %s\n", hmacErr.Error())
+			return fmt.Errorf("invalid HMAC digest: %s", hmacErr.Error())
 		}
 		if !presented {
-			// TODO: return on invalid request
-
 			// Read cookie
 			cookieMap, cookieErr := readCookie(w, r, config)
 			if cookieErr != nil {
-				writeError(w, "Internal Error happened in reading cookie!",
-					fmt.Sprintf("Unable to read cookies : %s", cookieErr.Error()), http.StatusInternalServerError)
+
+				writeError("Internal Error happened in reading cookie!",
+					fmt.Sprintf("Unable to read cookies : %s", cookieErr.Error()))
+				return fmt.Errorf("Unable to read cookies : %s", cookieErr.Error())
+
 			}
 
 			// Parse cookie to claim
 			claims, cookieErr := parseCookie(w, cookieMap, config)
 			if cookieErr != nil {
 				fmt.Printf("Error in reading cookie error: %s", cookieErr.Error())
+				return fmt.Errorf("Error in reading cookie error: %s", cookieErr.Error())
+
 			}
 
 			// Parse claim to request
 			parseErr := parseClaim(req, claims, protected)
 			if parseErr != nil {
-				writeError(w, "Can not parse claim", parseErr.Error(), http.StatusInternalServerError)
+				writeError("Can not parse claim %s", parseErr.Error())
+				return fmt.Errorf("Can not parse claim %s", parseErr.Error())
+
 			}
 		}
 	}
+	return nil
 }
 
 func parseHeader(w http.ResponseWriter, r *http.Request, result handler.Response, resultErr error) {
@@ -229,20 +241,20 @@ func readCookie(w http.ResponseWriter, r *http.Request, config *cf.Configuration
 
 	cookieHeader, errCHeader := r.Cookie(*config.HeaderCookieName)
 	if errCHeader != nil {
-		writeError(w, "Cookie Header not found.", errCHeader.Error(), http.StatusUnauthorized)
+		writeError("Cookie Header not found.", errCHeader.Error())
 		return nil, errCHeader
 
 	}
 
 	cookiePayload, errCPayload := r.Cookie(*config.PayloadCookieName)
 	if errCPayload != nil {
-		writeError(w, "Cookie Payload not found.", errCPayload.Error(), http.StatusUnauthorized)
+		writeError("Cookie Payload not found.", errCPayload.Error())
 		return nil, errCPayload
 	}
 
 	cookieSignature, errCSignature := r.Cookie(*config.SignatureCookieName)
 	if errCSignature != nil {
-		writeError(w, "Cookie Signature not found.", errCSignature.Error(), http.StatusUnauthorized)
+		writeError("Cookie Signature not found.", errCSignature.Error())
 		return nil, errCSignature
 	}
 
@@ -262,15 +274,15 @@ func parseCookie(w http.ResponseWriter, cookieMap map[string]*http.Cookie, confi
 	// }()
 	keydata, err := ioutil.ReadFile(*config.PublicKeyPath)
 	if err != nil {
-		writeError(w, "Error happened in reading cookie",
-			fmt.Sprintf("unable to read path: %s, error: %s", *config.PublicKeyPath, err.Error()), http.StatusInternalServerError)
+		writeError("Error happened in reading cookie",
+			fmt.Sprintf("unable to read path: %s, error: %s", *config.PublicKeyPath, err.Error()))
 		return nil, err
 	}
 
 	publicKey, keyErr := jwt.ParseECPublicKeyFromPEM(keydata)
 	if keyErr != nil {
-		writeError(w, "Internal Error happened in reading cookie!",
-			fmt.Sprintf("Unable to read public key : %s", keyErr.Error()), http.StatusInternalServerError)
+		writeError("Internal Error happened in reading cookie!",
+			fmt.Sprintf("Unable to read public key : %s", keyErr.Error()))
 		return nil, keyErr
 	}
 
@@ -281,7 +293,7 @@ func parseCookie(w http.ResponseWriter, cookieMap map[string]*http.Cookie, confi
 
 	if parseErr != nil {
 		log.Println(parseErr, cookie)
-		writeError(w, "Unable to decode cookie, please clear your cookies and sign-in again", parseErr.Error(), http.StatusUnauthorized)
+		writeError("Unable to decode cookie, please clear your cookies and sign-in again", parseErr.Error())
 		return nil, parseErr
 	}
 	if claims, ok := parsed.Claims.(jwt.MapClaims); ok && parsed.Valid {
@@ -389,9 +401,7 @@ func checkHmacPresent(req *Request) (bool, error) {
 	return false, nil
 }
 
-func writeError(w http.ResponseWriter, err string, logErr string, status int) {
+func writeError(err string, logErr string) {
 	log.Println(err)
 	log.Println(logErr)
-	w.Write([]byte(err))
-	w.WriteHeader(status)
 }
